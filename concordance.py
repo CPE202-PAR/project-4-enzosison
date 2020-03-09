@@ -16,10 +16,10 @@ class Concordance:
         f = open(filename)
         for word in f:
             word_split = word.rstrip()
-            self.stop_table.insert(word_split, 0)   #the insert function needs to take in a value so I just inserted 0 for each key
+            self.stop_table.insert(word_split, 1)   #the insert function needs to take in a value so I just inserted 0 for each key
 
     def load_concordance_table(self, filename):
-        """ Read words from input text file (filename) and insert them into the concordance hash table, 
+        """ Read words from input text file (filename) and insert them into the concordance hash table,
         after processing for punctuation, numbers and filtering out words that are in the stop words hash table.
         Do not include duplicate line numbers (word appearing on same line more than once, just one entry for that line)
         Starting size of hash table should be 191: self.concordance_table = HashTable(191)
@@ -38,24 +38,31 @@ class Concordance:
             line = self.string_prep(line)
             split_line = line.split()           #there's currently no check against stop words, punctuation, and numbers
             for word in split_line:
-            #add another if statement here, that checks for bad inputs first
-                if self.concordance_table.get_value(word) and not self.stop_check(word):      #if the word already exists in our table
-                    new_value = self.concordance_table.get_value(word)
-                    if linecounter not in new_value:            #insert new line number as long as it's not a repeat
-                        new_value = new_value + [linecounter]
-                        self.concordance_table.insert(word, new_value)
-                else:                                           #if it's a whole new word
-                    self.concordance_table.insert(word, [linecounter])
+                if self.stop_check(word):
+                    if self.concordance_table.get_value(word):      #if the word already exists in our table
+                        new_value = self.concordance_table.get_value(word)
+                        if linecounter not in new_value:            #insert new line number as long as it's not a repeat
+                            new_value = new_value + [linecounter]
+                            self.concordance_table.insert(word, new_value)
+                    else:                                           #if it's a whole new word
+                        self.concordance_table.insert(word, [linecounter])
 
     def string_prep(self, line):
-        for i in line:
-            if i == "-":
-                x = line.replace("-"," ")
-            translator = str.maketrans('', '', string.punctuation)
-            return line.translate(translator).lower()
+        test = line.rstrip()
+        test = test.lower()
+        for i in test:
+            if i == "'":
+                test = test.replace(i, '')
+            if i in string.punctuation:
+                test = test.replace(i, ' ')
+        return test
 
     def check_num(self, word):
-        return str.replace('.','','1').isdigit()
+        try:
+            float(word)
+            return True
+        except ValueError:
+            pass
 
     def stop_check(self, word):
         return not self.stop_table.in_table(word) and not self.check_num(word)
@@ -76,10 +83,3 @@ class Concordance:
             d.write(word + ": " + line_string)
             if index != len(sorted_list) - 1:
                 d.write("\n")
-
-
-
-
-
-
-
